@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+  ..
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Virtual Space - Minimalist Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background: #111111;
+        color: #ffffff;
+        min-height: 100vh;
+        margin: 0;
+      }
+
+      #messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        background: #222222;
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        flex-direction: column-reverse;
+        height: calc(100vh - 300px);
+      }
+
+      .message {
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        max-width: 85%;
+        position: relative;
+        border: 1px solid #333333;
+      }
+
+      .message.sent {
+        background: #333333;
+        margin-left: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+      }
+
+      .message.received {
+        background: #1a1a1a;
+        margin-right: auto;
+      }
+
+      .message.system {
+        background: #444444;
+        text-align: center;
+        margin: 0.75rem auto;
+      }
+
+      .sender {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #cccccc;
+      }
+
+      .message-menu {
+        cursor: pointer;
+        position: absolute;
+        right: 0.5rem;
+        top: 0.5rem;
+        color: #888888;
+        font-size: 1rem;
+      }
+
+      .message-menu-content {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 1.5rem;
+        background: #222222;
+        border: 1px solid #333333;
+        border-radius: 0.5rem;
+        z-index: 10;
+        min-width: 100px;
+      }
+
+      .message-menu-content button {
+        display: block;
+        padding: 0.5rem 1rem;
+        width: 100%;
+        text-align: left;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #ffffff;
+        font-size: 0.875rem;
+      }
+
+      .message-menu-content button:hover {
+        background: #333333;
+      }
+
+      .user-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        background: #333333;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        margin-right: 0.75rem;
+      }
+
+      .users-more {
+        cursor: pointer;
+        background: #333333;
+        color: #ffffff;
+        padding: 0 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+      }
+
+      .users-popup {
+        display: none;
+        position: absolute;
+        top: 3.5rem;
+        right: 0;
+        background: #222222;
+        border: 1px solid #333333;
+        border-radius: 0.75rem;
+        z-index: 20;
+        width: 18rem;
+      }
+
+      .users-popup.active {
+        display: block;
+      }
+
+      .user-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border-bottom: 1px solid #333333;
+      }
+
+      .user-item-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        background: #333333;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        margin-right: 1rem;
+      }
+
+      .file-input {
+        display: none;
+      }
+
+      .file-label {
+        width: 3rem;
+        height: 3rem;
+        padding: 0.75rem;
+        background: #333333;
+        color: #ffffff;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+      }
+
+      .status-dot {
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background: #ffffff;
+        display: inline-block;
+        margin-right: 0.75rem;
+      }
+
+      .status-dot.offline {
+        background: #666666;
+      }
+
+      .reaction {
+        display: inline-block;
+        margin-left: 0.5rem;
+        cursor: pointer;
+      }
+
+      .typing-indicator {
+        font-style: italic;
+        color: #888888;
+        margin-bottom: 0.5rem;
+      }
+
+      .read-receipt {
+        font-size: 0.65rem;
+        color: #cccccc;
+        margin-top: 0.25rem;
+        display: block;
+      }
+
+      .input-area {
+        position: sticky;
+        bottom: 0;
+        background: #222222;
+        padding: 1rem;
+        z-index: 10;
+        border-top: 1px solid #333333;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      input {
+        background: #333333;
+        color: #ffffff;
+        border: 1px solid #444444;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #666666;
+      }
+
+      button {
+        background: #333333;
+        color: #ffffff;
+        border: 1px solid #444444;
+      }
+
+      button:hover {
+        background: #444444;
+      }
+
+      .bg-blue-500 {
+        background: #333333 !important;
+      }
+
+      .bg-blue-500:hover {
+        background: #444444 !important;
+      }
+
+      .bg-red-500 {
+        background: #333333 !important;
+      }
+
+      .bg-red-500:hover {
+        background: #444444 !important;
+      }
+
+      .bg-gray-500 {
+        background: #333333 !important;
+      }
+
+      .bg-gray-500:hover {
+        background: #444444 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loginArea" class="flex items-center justify-center min-h-screen">
+      <div
+        class="bg-[#222222] p-8 rounded-lg border border-[#333333] w-full max-w-md"
+      >
+        <div class="flex items-center justify-center mb-6">
+          <h1 class="text-3xl font-bold">Virtual Space</h1>
+        </div>
+        <h2 class="text-xl font-semibold mb-6 text-center">
+          Join Virtual Space
+        </h2>
+        <input
+          type="text"
+          id="username"
+          placeholder="Enter username"
+          required
+          class="w-full p-3 mb-4 rounded-md"
+        />
+        <input
+          type="text"
+          id="contact"
+          placeholder="Enter email or phone number"
+          required
+          class="w-full p-3 mb-4 rounded-md"
+        />
+        <button onclick="connect()" class="w-full p-3 rounded-md transition">
+          <i class="fas fa-sign-in-alt mr-2"></i>Join
+        </button>
+      </div>
+    </div>
+
+    <div
+      id="chatArea"
+      style="display: none"
+      class="container mx-auto p-6 max-w-5xl h-screen flex flex-col"
+    >
+      <div
+        class="bg-[#222222] rounded-lg border border-[#333333] p-6 mb-6 flex-1 flex flex-col"
+      >
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-semibold">Virtual Space</h2>
+          <div class="flex items-center">
+            <div class="status-dot"></div>
+            <span id="status">Connected</span>
+          </div>
+          <div class="relative">
+            <div
+              class="users-container flex items-center"
+              id="usersContainer"
+            ></div>
+            <div class="users-popup" id="usersPopup">
+              <div class="users-popup-header font-semibold p-3 bg-[#333333]">
+                Active Users
+              </div>
+              <div class="users-popup-list" id="usersPopupList"></div>
+            </div>
+          </div>
+          <button class="p-3 rounded-md" onclick="endChat()">End Chat</button>
+        </div>
+        <div
+          id="typingIndicator"
+          class="typing-indicator"
+          style="display: none"
+        ></div>
+        <div id="messages"></div>
+        <div class="input-area">
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Type your message..."
+            required
+            class="flex-1 p-3 rounded-md"
+            oninput="handleTyping()"
+          />
+          <button
+            onclick="sendMessage()"
+            class="w-12 h-12 rounded-md flex items-center justify-center ml-2"
+          >
+            <i class="fas fa-paper-plane"></i>
+          </button>
+          <button
+            onclick="shareLocation()"
+            class="w-12 h-12 rounded-md flex items-center justify-center ml-2"
+          >
+            <i class="fas fa-map-marker-alt"></i>
+          </button>
+          <label for="fileInput" class="file-label w-12 h-12 ml-2"
+            ><i class="fas fa-paperclip"></i
+          ></label>
+          <input type="file" id="fileInput" class="file-input" />
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let ws;
+      let username;
+      let contact;
+      let userList = [];
+      let typingTimeout;
+
+      if (Notification.permission !== "granted") {
+        Notification.requestPermission();
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        document
+          .getElementById("messageInput")
+          .addEventListener("keypress", function (e) {
+            if (e.key === "Enter") sendMessage();
+          });
+
+        document
+          .getElementById("fileInput")
+          .addEventListener("change", function (e) {
+            const file = e.target.files[0];
+            if (file) sendFile(file);
+          });
+
+        window.addEventListener("beforeunload", endChat);
+
+        window.addEventListener("click", function (event) {
+          if (!event.target.matches(".message-menu, .message-menu *")) {
+            document
+              .querySelectorAll(".message-menu-content")
+              .forEach((dropdown) => {
+                dropdown.style.display = "none";
+              });
+          }
+          if (
+            !event.target.matches(".users-more, .users-popup, .users-popup *")
+          ) {
+            document.getElementById("usersPopup").classList.remove("active");
+          }
+        });
+      });
+
+      function showNotification(title, body) {
+        if (Notification.permission === "granted" && document.hidden) {
+          new Notification(title, { body });
+        }
+      }
+
+      function addMessage(
+        text,
+        type = "received",
+        sender = "",
+        isFile = false,
+        isImage = false,
+        messageId = Date.now(),
+        reactions = [],
+        readBy = []
+      ) {
+        const messages = document.getElementById("messages");
+        const existingMessage = document.querySelector(
+          `[data-timestamp="${messageId}"]`
+        );
+        if (existingMessage) return;
+        const messageElement = document.createElement("div");
+        messageElement.className = `message ${type}`;
+        messageElement.setAttribute("data-timestamp", messageId);
+
+        if (sender) {
+          const senderElement = document.createElement("div");
+          senderElement.className = "sender";
+          senderElement.textContent = sender;
+          messageElement.appendChild(senderElement);
+        }
+
+        const contentElement = document.createElement("div");
+        if (isFile) {
+          if (isImage) {
+            const image = document.createElement("img");
+            image.src = text;
+            image.className = "max-w-full rounded-md";
+            contentElement.appendChild(image);
+          } else {
+            const fileLink = document.createElement("a");
+            fileLink.href = text;
+            fileLink.textContent = "Download File";
+            fileLink.download = text.split("/").pop();
+            fileLink.className = "text-gray-400 underline";
+            contentElement.appendChild(fileLink);
+          }
+        } else {
+          contentElement.textContent = text;
+        }
+        messageElement.appendChild(contentElement);
+
+        const reactionsElement = document.createElement("div");
+        reactionsElement.className = "reactions flex";
+        reactions.forEach((r) => {
+          const reactionSpan = document.createElement("span");
+          reactionSpan.className = "reaction mr-2";
+          reactionSpan.textContent = r.emoji;
+          reactionSpan.title = r.username;
+          reactionsElement.appendChild(reactionSpan);
+        });
+        const reactionButton = document.createElement("span");
+        reactionButton.className = "reaction mr-2";
+        reactionButton.onclick = () => addReaction(messageId);
+        reactionsElement.appendChild(reactionButton);
+        messageElement.appendChild(reactionsElement);
+
+        const readReceiptElement = document.createElement("div");
+        readReceiptElement.className = "read-receipt";
+        readReceiptElement.textContent = readBy.length
+          ? `Read by: ${readBy.join(", ")}`
+          : "";
+        messageElement.appendChild(readReceiptElement);
+
+        if (type === "sent") {
+          const messageMenu = document.createElement("div");
+          messageMenu.className = "message-menu";
+          messageMenu.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
+          messageMenu.onclick = function (e) {
+            e.stopPropagation();
+            const menuContent = messageElement.querySelector(
+              ".message-menu-content"
+            );
+            menuContent.style.display =
+              menuContent.style.display === "block" ? "none" : "block";
+          };
+          const messageMenuContent = document.createElement("div");
+          messageMenuContent.className = "message-menu-content";
+          const editButton = document.createElement("button");
+          editButton.textContent = "Edit";
+          editButton.onclick = function () {
+            const originalText = contentElement.textContent;
+            const messageInput = document.getElementById("messageInput");
+            messageInput.value = originalText;
+            messageInput.dataset.editingMessageId = messageId;
+            messageElement.style.display = "none";
+          };
+          const deleteButton = document.createElement("button");
+          deleteButton.textContent = "Delete";
+          deleteButton.onclick = function () {
+            ws.send(
+              JSON.stringify({
+                type: "delete",
+                username: username,
+                messageId: messageId,
+              })
+            );
+            messageElement.remove();
+          };
+          messageMenuContent.appendChild(editButton);
+          messageMenuContent.appendChild(deleteButton);
+          messageElement.appendChild(messageMenu);
+          messageElement.appendChild(messageMenuContent);
+        }
+
+        messages.insertBefore(messageElement, messages.firstChild);
+        messages.scrollTop = 0;
+
+        if (type === "received" && sender !== username) {
+          showNotification(`${sender} sent a message`, text);
+          ws.send(
+            JSON.stringify({
+              type: "read",
+              username: username,
+              messageId: messageId,
+            })
+          );
+        }
+      }
+
+      function addReaction(messageId) {
+        const emoji = prompt("Enter an emoji to react with:");
+        if (emoji) {
+          ws.send(
+            JSON.stringify({
+              type: "reaction",
+              username: username,
+              messageId: messageId,
+              emoji: emoji,
+            })
+          );
+        }
+      }
+
+      function handleTyping() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        ws.send(
+          JSON.stringify({
+            type: "typing",
+            username: username,
+            isTyping: true,
+          })
+        );
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+          ws.send(
+            JSON.stringify({
+              type: "typing",
+              username: username,
+              timeline: 0,
+            })
+          );
+        }, 3000);
+      }
+
+      function updateTypingIndicator(typingUsers) {
+        const typingIndicator = document.getElementById("typingIndicator");
+        if (typingUsers.length > 0) {
+          typingIndicator.textContent = `${typingUsers.join(", ")} ${
+            typingUsers.length > 1 ? "are" : "is"
+          } typing...`;
+          typingIndicator.style.display = "block";
+        } else {
+          typingIndicator.style.display = "none";
+        }
+      }
+
+      function connect() {
+        username = document.getElementById("username").value.trim();
+        contact = document.getElementById("contact").value.trim();
+
+        if (!username) {
+          alert("Please enter a username");
+          return;
+        }
+        if (!contact) {
+          alert("Please enter an email or phone number");
+          return;
+        }
+        if (
+          !contact.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/) &&
+          !contact.match(/^\+?[1-9]\d{1,14}$/)
+        ) {
+          alert("Please enter a valid email or phone number");
+          return;
+        }
+
+        if (
+          location.protocol !== "https:" &&
+          location.hostname !== "localhost"
+        ) {
+          alert(
+            "This application requires a secure context (HTTPS or localhost). Please access via http://localhost:5001."
+          );
+          return;
+        }
+
+        updateStatus("Connecting...", false);
+        ws = new WebSocket("ws://localhost:8887");
+
+        ws.onopen = function () {
+          updateStatus("Connected", true);
+          document.getElementById("loginArea").style.display = "none";
+          document.getElementById("chatArea").style.display = "block";
+          ws.send(
+            JSON.stringify({
+              type: "join",
+              username: username,
+              contact: contact,
+            })
+          );
+          addMessage(`Welcome to the Virtual Space, ${username}!`, "system");
+        };
+
+        ws.onclose = function () {
+          updateStatus("Disconnected", false);
+          document.getElementById("loginArea").style.display = "block";
+          document.getElementById("chatArea").style.display = "none";
+          addMessage("Disconnected from Virtual Space server", "system");
+        };
+
+        ws.onerror = function (error) {
+          updateStatus("Error connecting", false);
+          console.error("WebSocket error:", error);
+          addMessage("Error connecting to server", "system");
+        };
+
+        ws.onmessage = function (event) {
+          try {
+            const data = JSON.parse(event.data);
+            console.log("Received message:", data);
+            switch (data.type) {
+              case "join":
+                addMessage(
+                  `${data.username} joined the Virtual Space`,
+                  "system"
+                );
+                updateUserList(data.userList);
+                break;
+              case "leave":
+                addMessage(`${data.username} left the Virtual Space`, "system");
+                updateUserList(data.userList);
+                break;
+              case "message":
+                addMessage(
+                  data.message,
+                  data.username === username ? "sent" : "received",
+                  data.username,
+                  false,
+                  false,
+                  data.messageId
+                );
+                break;
+              case "file":
+                if (data.username !== username) {
+                  addMessage(
+                    data.fileUrl,
+                    "received",
+                    data.username,
+                    true,
+                    data.isImage,
+                    data.messageId
+                  );
+                }
+                break;
+              case "location":
+                addLocation(data.username, data.latitude, data.longitude);
+                break;
+              case "delete":
+                const messageToDelete = document.querySelector(
+                  `[data-timestamp="${data.messageId}"]`
+                );
+                if (messageToDelete) messageToDelete.remove();
+                break;
+              case "edit":
+                const messageToEdit = document.querySelector(
+                  `[data-timestamp="${data.messageId}"]`
+                );
+                if (messageToEdit) {
+                  const contentDiv = messageToEdit.querySelector(
+                    "div:not(.sender):not(.reactions):not(.read-receipt)"
+                  );
+                  if (contentDiv) contentDiv.textContent = data.newMessage;
+                  messageToEdit.style.display = "block";
+                }
+                break;
+              case "user-list-update":
+                updateUserList(data.userList);
+                break;
+              case "typing":
+                updateTypingIndicator(data.typingUsers);
+                break;
+              case "reaction":
+                const messageWithReaction = document.querySelector(
+                  `[data-timestamp="${data.messageId}"]`
+                );
+                if (messageWithReaction) {
+                  const reactionsDiv =
+                    messageWithReaction.querySelector(".reactions");
+                  const reactionSpan = document.createElement("span");
+                  reactionSpan.className = "reaction mr-2";
+                  reactionSpan.textContent = data.emoji;
+                  reactionSpan.title = data.username;
+                  reactionsDiv.insertBefore(
+                    reactionSpan,
+                    reactionsDiv.lastChild
+                  );
+                }
+                break;
+              case "read":
+                const messageWithRead = document.querySelector(
+                  `[data-timestamp="${data.messageId}"]`
+                );
+                if (messageWithRead) {
+                  const readReceiptDiv =
+                    messageWithRead.querySelector(".read-receipt");
+                  readReceiptDiv.textContent = `Read by: ${data.readBy.join(
+                    ", "
+                  )}`;
+                }
+                break;
+              case "error":
+                addMessage(`Error: ${data.message}`, "system");
+                break;
+            }
+          } catch (e) {
+            console.error("Error parsing message:", e);
+          }
+        };
+      }
+
+      function updateStatus(text, connected) {
+        const status = document.getElementById("status");
+        const dot = document.querySelector(".status-dot");
+        status.textContent = text;
+        dot.classList.toggle("offline", !connected);
+      }
+
+      function updateUserList(users) {
+        userList = users;
+        const usersContainer = document.getElementById("usersContainer");
+        usersContainer.innerHTML = "";
+
+        const visibleUsers = users.slice(0, 3);
+        visibleUsers.forEach((user) => {
+          const userAvatar = document.createElement("div");
+          userAvatar.className = "user-avatar";
+          userAvatar.textContent = user.username.charAt(0).toUpperCase();
+          usersContainer.appendChild(userAvatar);
+        });
+
+        if (users.length > 3) {
+          const moreButton = document.createElement("div");
+          moreButton.className = "users-more";
+          moreButton.textContent = "+" + (users.length - 3);
+          moreButton.onclick = toggleUsersPopup;
+          usersContainer.appendChild(moreButton);
+        }
+
+        const usersPopupList = document.getElementById("usersPopupList");
+        usersPopupList.innerHTML = "";
+        users.forEach((user) => {
+          const userItem = document.createElement("div");
+          userItem.className = "user-item";
+          const userItemAvatar = document.createElement("div");
+          userItemAvatar.className = "user-item-avatar";
+          userItemAvatar.textContent = user.username.charAt(0).toUpperCase();
+          const userItemInfo = document.createElement("div");
+          userItemInfo.className = "user-item-info";
+          const userItemUsername = document.createElement("div");
+          userItemUsername.className = "user-item-username";
+          userItemUsername.textContent = user.username;
+          const userItemContact = document.createElement("div");
+          userItemContact.className = "user-item-contact text-sm text-gray-400";
+          userItemContact.textContent = user.contact;
+          userItemInfo.appendChild(userItemUsername);
+          userItemInfo.appendChild(userItemContact);
+          userItem.appendChild(userItemAvatar);
+          userItem.appendChild(userItemInfo);
+          usersPopupList.appendChild(userItem);
+        });
+      }
+
+      function toggleUsersPopup() {
+        document.getElementById("usersPopup").classList.toggle("active");
+      }
+
+      function sendMessage() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          addMessage(
+            "You are not connected to the Virtual Space server",
+            "system"
+          );
+          return;
+        }
+        const messageInput = document.getElementById("messageInput");
+        const message = messageInput.value.trim();
+        const editingMessageId = messageInput.dataset.editingMessageId;
+        if (editingMessageId) {
+          if (message) {
+            ws.send(
+              JSON.stringify({
+                type: "edit",
+                username: username,
+                messageId: editingMessageId,
+                newMessage: message,
+              })
+            );
+            const messageToEdit = document.querySelector(
+              `[data-timestamp="${editingMessageId}"]`
+            );
+            if (messageToEdit) {
+              const contentDiv = messageToEdit.querySelector(
+                "div:not(.sender):not(.reactions):not(.read-receipt)"
+              );
+              if (contentDiv) contentDiv.textContent = message;
+              messageToEdit.style.display = "block";
+            }
+          } else {
+            const messageToEdit = document.querySelector(
+              `[data-timestamp="${editingMessageId}"]`
+            );
+            if (messageToEdit) {
+              messageToEdit.style.display = "block";
+            }
+          }
+          delete messageInput.dataset.editingMessageId;
+        } else if (message) {
+          const messageId = Date.now();
+          ws.send(
+            JSON.stringify({
+              type: "message",
+              username: username,
+              message: message,
+              messageId: messageId,
+            })
+          );
+          addMessage(message, "sent", username, false, false, messageId);
+        }
+        messageInput.value = "";
+      }
+
+      function sendFile(file) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          addMessage(
+            "You are not connected to the Virtual Space server",
+            "system"
+          );
+          return;
+        }
+        const formData = new FormData();
+        formData.append("file", file);
+        fetch("/upload", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.fileUrl) {
+              const isImage = file.type.startsWith("image/");
+              const messageId = Date.now();
+              ws.send(
+                JSON.stringify({
+                  type: "file",
+                  username: username,
+                  fileUrl: data.fileUrl,
+                  isImage: isImage,
+                  messageId: messageId,
+                })
+              );
+              addMessage(
+                data.fileUrl,
+                "sent",
+                username,
+                true,
+                isImage,
+                messageId
+              );
+            } else {
+              addMessage("Failed to upload file", "system");
+            }
+          })
+          .catch((error) => {
+            console.error("Error uploading file:", error);
+            addMessage("Error uploading file", "system");
+          });
+      }
+
+      function shareLocation() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          addMessage(
+            "You are not connected to the Virtual Space server",
+            "system"
+          );
+          return;
+        }
+        if (!navigator.geolocation) {
+          addMessage("Geolocation is not supported by your browser", "system");
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          function (position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            ws.send(
+              JSON.stringify({
+                type: "location",
+                username: username,
+                latitude: latitude,
+                longitude: longitude,
+              })
+            );
+            addLocation(username, latitude, longitude, true);
+          },
+          function (error) {
+            addMessage(`Error getting location: ${error.message}`, "system");
+          }
+        );
+      }
+
+      function addLocation(sender, latitude, longitude, isSender = false) {
+        const messages = document.getElementById("messages");
+        const messageElement = document.createElement("div");
+        messageElement.className = `message ${isSender ? "sent" : "received"}`;
+        if (sender) {
+          const senderElement = document.createElement("div");
+          senderElement.className = "sender";
+          senderElement.textContent = sender;
+          messageElement.appendChild(senderElement);
+        }
+        const locationLink = document.createElement("a");
+        locationLink.href = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        locationLink.textContent = "View Location on Map";
+        locationLink.target = "_blank";
+        locationLink.className = "text-gray-400 underline";
+        const locationElement = document.createElement("div");
+        locationElement.appendChild(locationLink);
+        messageElement.appendChild(locationElement);
+        messages.insertBefore(messageElement, messages.firstChild);
+        messages.scrollTop = 0;
+      }
+
+      function endChat() {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(
+            JSON.stringify({
+              type: "leave",
+              username: username,
+            })
+          );
+          ws.close();
+        }
+      }
+    </script>
+  </body>
+</html>
